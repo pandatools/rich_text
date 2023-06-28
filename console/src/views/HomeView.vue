@@ -19,7 +19,7 @@ onMounted(() => {
 <template>
   <section id="plugin-starter">
     <div class="wrapper">
-      <span class="title"> 你已经成功运行起了插件！ </span>
+      <span class="title"> 你已经成功运dsfsd行起了插件kkkzzzdfppsss！ </span>
       <span class="message">你可以点击下方文档继续下一步</span>
       <div class="docs">
         <a
