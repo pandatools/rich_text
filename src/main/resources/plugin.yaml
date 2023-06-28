@@ -4,7 +4,7 @@ metadata:
   # The name defines how the plugin is invoked,A unique name
   name: PluginStarter
 spec:
-  version: 1.0.3
+  version: 1.0.4
   enabled: true
   requires: ">=2.5.0"
   author:
