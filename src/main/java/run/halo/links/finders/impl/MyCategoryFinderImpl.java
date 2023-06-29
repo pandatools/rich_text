@@ -1,7 +1,9 @@
 package run.halo.links.finders.impl;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +109,50 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
             });
     }
 
+
+    @Override
+    public  Mono<List<MyCategoryTreeVo>> getTreeByNamePart(String targetname){
+        Flux<MyCategoryTreeVo> categoryTreeVoFlux = listAll()
+            .collectList()
+            .flatMapIterable(categoryVos -> {
+                Map<String, MyCategoryTreeVo> nameIdentityMap = categoryVos.stream()
+                    .map(MyCategoryTreeVo::from)
+                    .collect(Collectors.toMap(categoryVo -> categoryVo.getMetadata().getName(),
+                        Function.identity()));
+
+                nameIdentityMap.forEach((nameKey, value) -> {
+                    List<String> children = value.getSpec().getChildren();
+                    if (children == null) {
+                        return;
+                    }
+                    for (String child : children) {
+                        MyCategoryTreeVo childNode = nameIdentityMap.get(child);
+                        if (childNode != null) {
+                            childNode.setParentName(nameKey);
+                        }
+                    }
+                });
+                return listToTree(nameIdentityMap.values(), null);
+            });
+
+
+        List<MyCategoryTreeVo> path = new ArrayList<>();
+
+        Mono<List<MyCategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
+        findPathToTopParent(listMono, targetname, path);
+        Collections.reverse(path);
+        Mono<List<MyCategoryTreeVo>> just = Mono.just(path);
+        return just;
+    }
+    static boolean findPathToTopParent(Mono<List<MyCategoryTreeVo>> monoList,String targetName, List<MyCategoryTreeVo> path) {
+        return monoList.flatMapMany(Flux::fromIterable)
+            .filter(node -> node.getMetadata().getName().equals(targetName)  || findPathToTopParent(Mono.just(node.getChildren()), targetName, path))
+            .doOnNext(node -> path.add(node))
+            .hasElements()
+            .block();
+    }
+
+
     Flux<MyCategoryTreeVo> tomyCategoryTreeVoFlux(String name) {
         return listAll()
             .collectList()
@@ -157,6 +203,9 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
             .collect(Collectors.toList());
         return result;
     }
+
+
+    
     static String getParentName(List<MyCategoryTreeVo>lists,String parentName,String aim,int deep){
 
         for (int i = 0; i < lists.size(); i++) {

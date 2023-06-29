@@ -31,4 +31,6 @@ public interface MyCategoryFinder {
     Flux<MyCategoryTreeVo> listAsTree(String name);
 
     Flux<MyCategoryTreeVo> getTreeByName(String name);
+
+    Mono<List<MyCategoryTreeVo>> getTreeByNamePart(String name);
 }
