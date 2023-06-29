@@ -7,8 +7,8 @@ import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.content.Category;
 import run.halo.app.extension.ListResult;
 
-import run.halo.links.vo.MyCategoryTreeVo;
-import run.halo.links.vo.MyCategoryVo;
+import run.halo.links.vo.CategoryTreeVo;
+import run.halo.links.vo.CategoryVo;
 
 /**
  * A finder for {@link Category}.
@@ -18,19 +18,19 @@ import run.halo.links.vo.MyCategoryVo;
  */
 public interface MyCategoryFinder {
 
-    Mono<MyCategoryVo> getByName(String name);
+    Mono<CategoryVo> getByName(String name);
 
-    Flux<MyCategoryVo> getByNames(List<String> names);
+    Flux<CategoryVo> getByNames(List<String> names);
 
-    Mono<ListResult<MyCategoryVo>> list(@Nullable Integer page, @Nullable Integer size);
+    Mono<ListResult<CategoryVo>> list(@Nullable Integer page, @Nullable Integer size);
 
-    Flux<MyCategoryVo> listAll();
+    Flux<CategoryVo> listAll();
 
-    Flux<MyCategoryTreeVo> listAsTree();
+    Flux<CategoryTreeVo> listAsTree();
 
-    Flux<MyCategoryTreeVo> listAsTree(String name);
+    Flux<CategoryTreeVo> listAsTree(String name);
 
-    Flux<MyCategoryTreeVo> getTreeByName(String name);
+    Flux<CategoryTreeVo> getTreeByName(String name);
 
-    Mono<List<MyCategoryTreeVo>> getTreeByNamePart(String name);
+    Mono<List<CategoryTreeVo>> getTreeByNamePart(String name);
 }

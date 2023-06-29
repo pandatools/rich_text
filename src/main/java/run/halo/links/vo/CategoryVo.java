@@ -18,8 +18,8 @@ import run.halo.app.extension.MetadataOperator;
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @GVK(group = "core.halo.run", version = "v1alpha1",
-    kind = "MyCategoryVo", plural = "mycategoryvos", singular = "mycategoryvo")
-public class MyCategoryVo extends AbstractExtension implements MyExtensionVoOperator {
+    kind = "CategoryVo", plural = "mycategoryvos", singular = "categoryvo")
+public class CategoryVo extends AbstractExtension implements MyExtensionVoOperator {
 
     MetadataOperator metadata;
 
@@ -30,13 +30,13 @@ public class MyCategoryVo extends AbstractExtension implements MyExtensionVoOper
     Integer postCount;
 
     /**
-     * Convert {@link Category} to {@link MyCategoryVo}.
+     * Convert {@link Category} to {@link CategoryVo}.
      *
      * @param category category extension
      * @return category value object
      */
-    public static MyCategoryVo from(Category category) {
-        return MyCategoryVo.builder()
+    public static CategoryVo from(Category category) {
+        return CategoryVo.builder()
             .metadata(category.getMetadata())
             .spec(category.getSpec())
             .status(category.getStatus())

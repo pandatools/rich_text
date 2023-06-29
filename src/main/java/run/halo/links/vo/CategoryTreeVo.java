@@ -23,10 +23,10 @@ import java.util.Objects;
 @ToString
 @EqualsAndHashCode(callSuper = true)
 @GVK(group = "core.halo.run", version = "v1alpha1",
-    kind = "MyCategoryTreeVo", plural = "mycategorytreevos", singular = "mycategoryvo")
-public class MyCategoryTreeVo
+    kind = "CategoryTreeVo", plural = "mycategorytreevos", singular = "categoryvo")
+public class CategoryTreeVo
     extends AbstractExtension
-    implements MyVisualizableTreeNode<MyCategoryTreeVo>, MyExtensionVoOperator {
+    implements MyVisualizableTreeNode<CategoryTreeVo>, MyExtensionVoOperator {
 
     private MetadataOperator metadata;
 
@@ -34,21 +34,21 @@ public class MyCategoryTreeVo
 
     private Category.CategoryStatus status;
 
-    private List<MyCategoryTreeVo> children;
+    private List<CategoryTreeVo> children;
 
     private String parentName;
 
     private Integer postCount;
 
     /**
-     * Convert {@link MyCategoryVo} to {@link MyCategoryTreeVo}.
+     * Convert {@link CategoryVo} to {@link CategoryTreeVo}.
      *
      * @param category category value object
      * @return category tree value object
      */
-    public static MyCategoryTreeVo from(MyCategoryVo category) {
+    public static CategoryTreeVo from(CategoryVo category) {
         Assert.notNull(category, "The category must not be null");
-        return MyCategoryTreeVo.builder()
+        return CategoryTreeVo.builder()
             .metadata(category.getMetadata())
             .spec(category.getSpec())
             .status(category.getStatus())

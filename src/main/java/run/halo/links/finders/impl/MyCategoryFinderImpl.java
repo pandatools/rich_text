@@ -20,8 +20,8 @@ import run.halo.app.extension.ListResult;
 import run.halo.app.extension.ReactiveExtensionClient;
 import run.halo.app.theme.finders.Finder;
 import run.halo.links.MyCategoryFinder;
-import run.halo.links.vo.MyCategoryTreeVo;
-import run.halo.links.vo.MyCategoryVo;
+import run.halo.links.vo.CategoryTreeVo;
+import run.halo.links.vo.CategoryVo;
 
 /**
  * A default implementation of {@link MyCategoryFinder}.
@@ -39,13 +39,13 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
     }
 
     @Override
-    public Mono<MyCategoryVo> getByName(String name) {
+    public Mono<CategoryVo> getByName(String name) {
         return client.fetch(Category.class, name)
-            .map(MyCategoryVo::from);
+            .map(CategoryVo::from);
     }
 
     @Override
-    public Flux<MyCategoryVo> getByNames(List<String> names) {
+    public Flux<CategoryVo> getByNames(List<String> names) {
         if (names == null) {
             return Flux.empty();
         }
@@ -54,42 +54,42 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
     }
 
     @Override
-    public Mono<ListResult<MyCategoryVo>> list(Integer page, Integer size) {
+    public Mono<ListResult<CategoryVo>> list(Integer page, Integer size) {
         return client.list(Category.class, null,
                 defaultComparator(), pageNullSafe(page), sizeNullSafe(size))
             .map(list -> {
-                List<MyCategoryVo> MyCategoryVos = list.get()
-                    .map(MyCategoryVo::from)
+                List<CategoryVo> categoryVos = list.get()
+                    .map(CategoryVo::from)
                     .collect(Collectors.toList());
                 return new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
-                    MyCategoryVos);
+                    categoryVos);
             })
             .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
     }
 
     @Override
-    public Flux<MyCategoryVo> listAll() {
+    public Flux<CategoryVo> listAll() {
         return client.list(Category.class, null, defaultComparator())
-            .map(MyCategoryVo::from);
+            .map(CategoryVo::from);
     }
 
     @Override
-    public Flux<MyCategoryTreeVo> listAsTree() {
+    public Flux<CategoryTreeVo> listAsTree() {
         return this.tomyCategoryTreeVoFlux(null);
     }
 
     @Override
-    public Flux<MyCategoryTreeVo> listAsTree(String name) {
+    public Flux<CategoryTreeVo> listAsTree(String name) {
         return this.tomyCategoryTreeVoFlux(name);
     }
 
     @Override
-    public Flux<MyCategoryTreeVo> getTreeByName(String name){
+    public Flux<CategoryTreeVo> getTreeByName(String name){
         return listAll()
             .collectList()
             .flatMapIterable(myCategoryVos -> {
-                Map<String, MyCategoryTreeVo> nameIdentityMap = myCategoryVos.stream()
-                    .map(MyCategoryTreeVo::from)
+                Map<String, CategoryTreeVo> nameIdentityMap = myCategoryVos.stream()
+                    .map(CategoryTreeVo::from)
                     .collect(Collectors.toMap(myCategoryVo -> myCategoryVo.getMetadata().getName(),
                         Function.identity()));
 
@@ -99,7 +99,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                         return;
                     }
                     for (String child : children) {
-                        MyCategoryTreeVo childNode = nameIdentityMap.get(child);
+                        CategoryTreeVo childNode = nameIdentityMap.get(child);
                         if (childNode != null) {
                             childNode.setParentName(nameKey);
                         }
@@ -111,12 +111,12 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
 
     @Override
-    public  Mono<List<MyCategoryTreeVo>> getTreeByNamePart(String targetname){
-        Flux<MyCategoryTreeVo> categoryTreeVoFlux = listAll()
+    public  Mono<List<CategoryTreeVo>> getTreeByNamePart(String targetname){
+        Flux<CategoryTreeVo> categoryTreeVoFlux = listAll()
             .collectList()
             .flatMapIterable(categoryVos -> {
-                Map<String, MyCategoryTreeVo> nameIdentityMap = categoryVos.stream()
-                    .map(MyCategoryTreeVo::from)
+                Map<String, CategoryTreeVo> nameIdentityMap = categoryVos.stream()
+                    .map(CategoryTreeVo::from)
                     .collect(Collectors.toMap(categoryVo -> categoryVo.getMetadata().getName(),
                         Function.identity()));
 
@@ -126,7 +126,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                         return;
                     }
                     for (String child : children) {
-                        MyCategoryTreeVo childNode = nameIdentityMap.get(child);
+                        CategoryTreeVo childNode = nameIdentityMap.get(child);
                         if (childNode != null) {
                             childNode.setParentName(nameKey);
                         }
@@ -136,15 +136,15 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
             });
 
 
-        List<MyCategoryTreeVo> path = new ArrayList<>();
+        List<CategoryTreeVo> path = new ArrayList<>();
 
-        Mono<List<MyCategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
+        Mono<List<CategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
         findPathToTopParent(listMono, targetname, path);
         Collections.reverse(path);
-        Mono<List<MyCategoryTreeVo>> just = Mono.just(path);
+        Mono<List<CategoryTreeVo>> just = Mono.just(path);
         return just;
     }
-    static boolean findPathToTopParent(Mono<List<MyCategoryTreeVo>> monoList,String targetName, List<MyCategoryTreeVo> path) {
+    static boolean findPathToTopParent(Mono<List<CategoryTreeVo>> monoList,String targetName, List<CategoryTreeVo> path) {
         return monoList.flatMapMany(Flux::fromIterable)
             .filter(node -> node.getMetadata().getName().equals(targetName)  || findPathToTopParent(Mono.just(node.getChildren()), targetName, path))
             .doOnNext(node -> path.add(node))
@@ -153,12 +153,12 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
     }
 
 
-    Flux<MyCategoryTreeVo> tomyCategoryTreeVoFlux(String name) {
+    Flux<CategoryTreeVo> tomyCategoryTreeVoFlux(String name) {
         return listAll()
             .collectList()
             .flatMapIterable(myCategoryVos -> {
-                Map<String, MyCategoryTreeVo> nameIdentityMap = myCategoryVos.stream()
-                    .map(MyCategoryTreeVo::from)
+                Map<String, CategoryTreeVo> nameIdentityMap = myCategoryVos.stream()
+                    .map(CategoryTreeVo::from)
                     .collect(Collectors.toMap(myCategoryVo -> myCategoryVo.getMetadata().getName(),
                         Function.identity()));
 
@@ -168,7 +168,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                         return;
                     }
                     for (String child : children) {
-                        MyCategoryTreeVo childNode = nameIdentityMap.get(child);
+                        CategoryTreeVo childNode = nameIdentityMap.get(child);
                         if (childNode != null) {
                             childNode.setParentName(nameKey);
                         }
@@ -177,28 +177,28 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                 return listToTree(nameIdentityMap.values(), name);
             });
     }
-    static List<MyCategoryTreeVo> listToMyTree(Collection<MyCategoryTreeVo> list, String name) {
-        Map<String, List<MyCategoryTreeVo>> parentNameIdentityMap = list.stream()
-            .filter(MyCategoryTreeVo -> MyCategoryTreeVo.getParentName() != null)
-            .collect(Collectors.groupingBy(MyCategoryTreeVo::getParentName));
+    static List<CategoryTreeVo> listToMyTree(Collection<CategoryTreeVo> list, String name) {
+        Map<String, List<CategoryTreeVo>> parentNameIdentityMap = list.stream()
+            .filter(CategoryTreeVo -> CategoryTreeVo.getParentName() != null)
+            .collect(Collectors.groupingBy(CategoryTreeVo::getParentName));
 
         list.forEach(node -> {
             // sort children
-            List<MyCategoryTreeVo> children =
+            List<CategoryTreeVo> children =
                 parentNameIdentityMap.getOrDefault(node.getMetadata().getName(), List.of())
                     .stream()
                     .sorted(defaultTreeNodeComparator())
                     .toList();
             node.setChildren(children);
         });
-        List<MyCategoryTreeVo> res = list.stream()
+        List<CategoryTreeVo> res = list.stream()
             .filter(v -> StringUtils.isEmpty(null) ? v.getParentName() == null
                 : StringUtils.equals(v.getMetadata().getName(), null))
             .sorted(defaultTreeNodeComparator())
             .collect(Collectors.toList());
 
         String parentName = getParentName(res, null, name,0);
-        List<MyCategoryTreeVo> result = res.stream()
+        List<CategoryTreeVo> result = res.stream()
             .filter(tmp -> tmp.getMetadata().getName().equals(parentName))
             .collect(Collectors.toList());
         return result;
@@ -206,10 +206,10 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
 
     
-    static String getParentName(List<MyCategoryTreeVo>lists,String parentName,String aim,int deep){
+    static String getParentName(List<CategoryTreeVo>lists,String parentName,String aim,int deep){
 
         for (int i = 0; i < lists.size(); i++) {
-            MyCategoryTreeVo element = lists.get(i);
+            CategoryTreeVo element = lists.get(i);
             if(deep == 0){
                 parentName = element.getMetadata().getName();
             }
@@ -223,14 +223,14 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
         }
         return null;
     }
-    static List<MyCategoryTreeVo> listToTree(Collection<MyCategoryTreeVo> list, String name) {
-        Map<String, List<MyCategoryTreeVo>> parentNameIdentityMap = list.stream()
-            .filter(MyCategoryTreeVo -> MyCategoryTreeVo.getParentName() != null)
-            .collect(Collectors.groupingBy(MyCategoryTreeVo::getParentName));
+    static List<CategoryTreeVo> listToTree(Collection<CategoryTreeVo> list, String name) {
+        Map<String, List<CategoryTreeVo>> parentNameIdentityMap = list.stream()
+            .filter(CategoryTreeVo -> CategoryTreeVo.getParentName() != null)
+            .collect(Collectors.groupingBy(CategoryTreeVo::getParentName));
 
         list.forEach(node -> {
             // sort children
-            List<MyCategoryTreeVo> children =
+            List<CategoryTreeVo> children =
                 parentNameIdentityMap.getOrDefault(node.getMetadata().getName(), List.of())
                     .stream()
                     .sorted(defaultTreeNodeComparator())
@@ -244,12 +244,12 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
             .collect(Collectors.toList());
     }
 
-    static Comparator<MyCategoryTreeVo> defaultTreeNodeComparator() {
-        Function<MyCategoryTreeVo, Integer> priority =
+    static Comparator<CategoryTreeVo> defaultTreeNodeComparator() {
+        Function<CategoryTreeVo, Integer> priority =
             category -> Objects.requireNonNullElse(category.getSpec().getPriority(), 0);
-        Function<MyCategoryTreeVo, Instant> creationTimestamp =
+        Function<CategoryTreeVo, Instant> creationTimestamp =
             category -> category.getMetadata().getCreationTimestamp();
-        Function<MyCategoryTreeVo, String> name =
+        Function<CategoryTreeVo, String> name =
             category -> category.getMetadata().getName();
         return Comparator.comparing(priority)
             .thenComparing(creationTimestamp)
