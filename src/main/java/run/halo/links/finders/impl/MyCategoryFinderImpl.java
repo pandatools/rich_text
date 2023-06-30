@@ -144,6 +144,47 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
         Mono<List<CategoryTreeVo>> just = Mono.just(path);
         return just;
     }
+
+
+    @Override
+    public CategoryTreeVo getTreeByNameChild(String targetname){
+        Flux<CategoryTreeVo> categoryTreeVoFlux = listAll()
+            .collectList()
+            .flatMapIterable(categoryVos -> {
+                Map<String, CategoryTreeVo> nameIdentityMap = categoryVos.stream()
+                    .map(CategoryTreeVo::from)
+                    .collect(Collectors.toMap(categoryVo -> categoryVo.getMetadata().getName(),
+                        Function.identity()));
+
+                nameIdentityMap.forEach((nameKey, value) -> {
+                    List<String> children = value.getSpec().getChildren();
+                    if (children == null) {
+                        return;
+                    }
+                    for (String child : children) {
+                        CategoryTreeVo childNode = nameIdentityMap.get(child);
+                        if (childNode != null) {
+                            childNode.setParentName(nameKey);
+                        }
+                    }
+                });
+                return listToTree(nameIdentityMap.values(), null);
+            });
+
+
+        List<CategoryTreeVo> path = new ArrayList<>();
+
+        Mono<List<CategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
+        findPathToTopParent(listMono, targetname, path);
+
+        for(CategoryTreeVo p:path){
+            if(p.getMetadata().getName().equals(targetname)){
+                return p;
+            }
+        }
+        return null;
+    }
+
     static boolean findPathToTopParent(Mono<List<CategoryTreeVo>> monoList,String targetName, List<CategoryTreeVo> path) {
         return monoList.flatMapMany(Flux::fromIterable)
             .filter(node -> node.getMetadata().getName().equals(targetName)  || findPathToTopParent(Mono.just(node.getChildren()), targetName, path))
@@ -222,6 +263,21 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
             }
         }
         return null;
+    }
+    @Override
+     public void traverse(CategoryTreeVo node, List<String> result) {
+        if (node == null) {
+            return;
+        }
+
+        result.add(node.getMetadata().getName());
+
+        List<CategoryTreeVo> children = node.getChildren();
+        if (children != null) {
+            for (CategoryTreeVo child : children) {
+                traverse(child, result);
+            }
+        }
     }
     static List<CategoryTreeVo> listToTree(Collection<CategoryTreeVo> list, String name) {
         Map<String, List<CategoryTreeVo>> parentNameIdentityMap = list.stream()

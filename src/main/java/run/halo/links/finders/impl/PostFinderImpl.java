@@ -2,34 +2,43 @@ package run.halo.links.finders.impl;
 
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.comparator.Comparators;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.halo.app.core.extension.Counter;
 import run.halo.app.core.extension.content.Post;
 import run.halo.app.core.extension.content.Snapshot;
+import run.halo.app.extension.ListResult;
 import run.halo.app.extension.MetadataUtil;
 import run.halo.app.extension.ReactiveExtensionClient;
 
 import run.halo.app.theme.finders.Finder;
-
+import run.halo.app.metrics.MeterUtils;
 import run.halo.links.ContentWrapper;
+import run.halo.links.MyCategoryFinder;
 import run.halo.links.MyPostFinder;
 // import run.halo.links.MyPostPublicQueryService;
+import run.halo.links.vo.CategoryTreeVo;
 import run.halo.links.vo.ContentVo;
 import run.halo.links.vo.MyListedPostVo;
 import run.halo.links.vo.MyPostVo;
+import run.halo.links.vo.MyStatsVo;
 
 /**
  * A finder for {@link Post}.
@@ -40,7 +49,7 @@ import run.halo.links.vo.MyPostVo;
 @Finder("mypostFinder")
 @AllArgsConstructor
 public class PostFinderImpl implements MyPostFinder {
-
+    private final MyCategoryFinder categoryFinder;
 
     private final ReactiveExtensionClient client;
 
@@ -133,6 +142,73 @@ public class PostFinderImpl implements MyPostFinder {
         }
         return result;
     }
+    private boolean contains(List<String> c, List<String> keys) {
+        if(c == null){
+            return false;
+        }
+        for(String key:keys) {
+            if (StringUtils.isBlank(key)) {
+                continue;
+            }
+            if (c.contains(key)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private <T extends MyListedPostVo> Mono<MyStatsVo> populateStats(T postVo) {
+        return
+            client.fetch(Counter.class, MeterUtils.nameOf(Post.class, postVo.getMetadata().getName())).map(counter -> MyStatsVo.builder()
+                .visit(counter.getVisit())
+                .upvote(counter.getUpvote())
+                .comment(counter.getApprovedComment())
+                .build()
+            ).defaultIfEmpty(MyStatsVo.empty());
+
+    }
+
+    int pageNullSafe(Integer page) {
+        return ObjectUtils.defaultIfNull(page, 1);
+    }
+
+    int sizeNullSafe(Integer size) {
+        return ObjectUtils.defaultIfNull(size, 10);
+    }
+    @Override
+    public Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page,
+        @Nullable Integer size,
+        String categoryName){
+        CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
+
+        List<String> result = new ArrayList<>();
+        categoryFinder.traverse(categoryTreeVo,result);
+        System.out.println("yslhhhresult = " + result);
+        Comparator<Post> comparator =  defaultComparator();
+        Predicate<Post> postPredicate = post -> contains(post.getSpec().getCategories(), result);
+        Predicate<Post> FIXED_PREDICATE = post -> post.isPublished()
+            && Objects.equals(false, post.getSpec().getDeleted())
+            && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible());
+
+        Predicate<Post> predicate = FIXED_PREDICATE
+            .and(postPredicate == null ? post -> true : postPredicate);
+
+        return client.list(Post.class, predicate,
+                comparator, pageNullSafe(page), sizeNullSafe(size))
+            .flatMap(list -> Flux.fromStream(list.get())
+                .concatMap(post -> convertToListedPostVo(post)
+                    .flatMap(postVo -> populateStats(postVo)
+                        .doOnNext(postVo::setStats).thenReturn(postVo)
+                    )
+                )
+                .collectList()
+                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                    postVos)
+                )
+            )
+            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+    }
+
 
     protected void checkBaseSnapshot(Snapshot snapshot) {
         Assert.notNull(snapshot, "The snapshot must not be null.");
@@ -192,41 +268,6 @@ public class PostFinderImpl implements MyPostFinder {
         postVo.setContributors(List.of());
 
         return Mono.just(postVo)
-            // .flatMap(lp -> populateStats(postVo)
-            //     .doOnNext(lp::setStats)
-            //     .thenReturn(lp)
-            // )
-            // .flatMap(p -> {
-            //     String owner = p.getSpec().getOwner();
-            //     return contributorFinder.getContributor(owner)
-            //         .doOnNext(p::setOwner)
-            //         .thenReturn(p);
-            // })
-            // .flatMap(p -> {
-            //     List<String> tagNames = p.getSpec().getTags();
-            //     if (CollectionUtils.isEmpty(tagNames)) {
-            //         return Mono.just(p);
-            //     }
-            //     return tagFinder.getByNames(tagNames)
-            //         .collectList()
-            //         .doOnNext(p::setTags)
-            //         .thenReturn(p);
-            // })
-            // .flatMap(p -> {
-            //     List<String> categoryNames = p.getSpec().getCategories();
-            //     if (CollectionUtils.isEmpty(categoryNames)) {
-            //         return Mono.just(p);
-            //     }
-            //     return categoryFinder.getByNames(categoryNames)
-            //         .collectList()
-            //         .doOnNext(p::setCategories)
-            //         .thenReturn(p);
-            // })
-            // .flatMap(p -> contributorFinder.getContributors(p.getStatus().getContributors())
-            //     .collectList()
-            //     .doOnNext(p::setContributors)
-            //     .thenReturn(p)
-            // )
             .defaultIfEmpty(postVo);
     }
 

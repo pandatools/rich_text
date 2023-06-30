@@ -33,4 +33,8 @@ public interface MyCategoryFinder {
     Flux<CategoryTreeVo> getTreeByName(String name);
 
     Mono<List<CategoryTreeVo>> getTreeByNamePart(String name);
+
+    CategoryTreeVo getTreeByNameChild(String name);
+
+    void traverse(CategoryTreeVo node, List<String> result) ;
 }

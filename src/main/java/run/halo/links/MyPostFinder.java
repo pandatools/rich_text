@@ -1,8 +1,10 @@
 package run.halo.links;
 
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.content.Post;
+import run.halo.app.extension.ListResult;
 import run.halo.links.vo.MyListedPostVo;
 import run.halo.links.vo.MyPostVo;
 import java.util.List;
@@ -31,4 +33,7 @@ public interface MyPostFinder {
 
 
     Map<String,String> getAnnotationsByArticle(String name, String patternString);
+
+    Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page, @Nullable Integer size,
+        String categoryName);
 }
