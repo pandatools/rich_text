@@ -249,17 +249,16 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
     
     static String getParentName(List<CategoryTreeVo>lists,String parentName,String aim,int deep){
 
-        for (int i = 0; i < lists.size(); i++) {
-            CategoryTreeVo element = lists.get(i);
-            if(deep == 0){
+        for (CategoryTreeVo element : lists) {
+            if (deep == 0) {
                 parentName = element.getMetadata().getName();
             }
-            if(aim.equals(element.getMetadata().getName())){
+            if (aim.equals(element.getMetadata().getName())) {
                 return parentName;
             }
-            String name = getParentName(element.getChildren(),parentName,aim,deep +1);
-            if(name != null){
-                return  name;
+            String name = getParentName(element.getChildren(), parentName, aim, deep + 1);
+            if (name != null) {
+                return name;
             }
         }
         return null;

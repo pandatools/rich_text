@@ -53,53 +53,6 @@ public class PostFinderImpl implements MyPostFinder {
 
     private final ReactiveExtensionClient client;
 
-    // private final MyPostPublicQueryService postPublicQueryService;
-
-    // public Mono<MyListedPostVo> convertToListedPostVo(@NonNull Post post) {
-    //     Assert.notNull(post, "Post must not be null");
-    //     MyListedPostVo postVo = MyListedPostVo.from(post);
-    //     postVo.setCategories(List.of());
-    //     postVo.setTags(List.of());
-    //     postVo.setContributors(List.of());
-    //
-    //     return Mono.just(postVo)
-    //         .flatMap(lp -> populateStats(postVo)
-    //             .doOnNext(lp::setStats)
-    //             .thenReturn(lp)
-    //         )
-    //         .flatMap(p -> {
-    //             String owner = p.getSpec().getOwner();
-    //             return contributorFinder.getContributor(owner)
-    //                 .doOnNext(p::setOwner)
-    //                 .thenReturn(p);
-    //         })
-    //         .flatMap(p -> {
-    //             List<String> tagNames = p.getSpec().getTags();
-    //             if (CollectionUtils.isEmpty(tagNames)) {
-    //                 return Mono.just(p);
-    //             }
-    //             return tagFinder.getByNames(tagNames)
-    //                 .collectList()
-    //                 .doOnNext(p::setTags)
-    //                 .thenReturn(p);
-    //         })
-    //         .flatMap(p -> {
-    //             List<String> categoryNames = p.getSpec().getCategories();
-    //             if (CollectionUtils.isEmpty(categoryNames)) {
-    //                 return Mono.just(p);
-    //             }
-    //             return categoryFinder.getByNames(categoryNames)
-    //                 .collectList()
-    //                 .doOnNext(p::setCategories)
-    //                 .thenReturn(p);
-    //         })
-    //         .flatMap(p -> contributorFinder.getContributors(p.getStatus().getContributors())
-    //             .collectList()
-    //             .doOnNext(p::setContributors)
-    //             .thenReturn(p)
-    //         )
-    //         .defaultIfEmpty(postVo);
-    // }
 
     @Override
     public Mono<MyPostVo> getByName(String postName) {
@@ -115,17 +68,7 @@ public class PostFinderImpl implements MyPostFinder {
                     .thenReturn(postVo);
                 return myPostVoMono;
             });
-        // System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeee post = " + post);
-        // return Mono.empty();
-        // System.out.println("dddddddddddddddddddddddddddddddd");
-        // return client.get(Post.class, postName)
-        //     .filter(FIXED_PREDICATE)
-        //     // .flatMap(postPublicQueryService::convertToListedPostVo)
-        //     .map(MyPostVo::from)
-        //     .flatMap(postVo -> content(postName)
-        //         .doOnNext(postVo::setContent)
-        //         .thenReturn(postVo)
-        //     );
+
     }
 
     @Override
@@ -274,10 +217,6 @@ public class PostFinderImpl implements MyPostFinder {
     @Override
     public Flux<MyListedPostVo> listAll() {
 
-        // Predicate<Post> FIXED_PREDICATE = post -> post.isPublished()
-        //     && Objects.equals(false, post.getSpec().getDeleted())
-        //     && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible());
-
 
         var list = client.list(Post.class, post -> post.isPublished()
                     && Objects.equals(false, post.getSpec().getDeleted())
@@ -285,37 +224,6 @@ public class PostFinderImpl implements MyPostFinder {
 
                 , defaultComparator())
             .concatMap(this::convertToListedPostVo);
-        // Flux<MyListedPostVo> listedPostVoFlux1 =
-        //     client.list(Post.class, FIXED_PREDICATE, defaultComparator())
-        //         .concatMap(postPublicQueryService::convertToListedPostVo);
-        //
-        // // List<ListedPostVo> lists = listedPostVoFlux.collectList().block();
-        // // for (ListedPostVo item : lists) {
-        // //     System.out.println(item);
-        //
-        // // }
-        // String patternString = "^check";
-        // List<MyListedPostVo> path = new ArrayList<>();
-        // client.list(Post.class, FIXED_PREDICATE, defaultComparator())
-        //     .concatMap(postPublicQueryService::convertToListedPostVo).subscribe(
-        //         ListedPostVo -> {
-        //             Map<String, String> annotations =
-        //                 ListedPostVo.getMetadata().getAnnotations();
-        //
-        //             for (String key : annotations.keySet()) {
-        //                 Pattern pattern = Pattern.compile(patternString);
-        //                 Matcher matcher = pattern.matcher(key);
-        //                 if (matcher.find()) {
-        //                     path.add(ListedPostVo);
-        //                     break;
-        //                 }
-        //             }
-        //
-        //         }
-        //     );
-
-
-        // return listedPostVoFlux1;
         return list;
     }
 
