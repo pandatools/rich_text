@@ -85,6 +85,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
     @Override
     public Flux<CategoryTreeVo> getTreeByName(String name){
+        //根据名称找到从root下所有的树
         return listAll()
             .collectList()
             .flatMapIterable(myCategoryVos -> {
@@ -111,7 +112,8 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
 
     @Override
-    public  Mono<List<CategoryTreeVo>> getTreeByNamePart(String targetname){
+    public  Mono<List<CategoryTreeVo>> getTreeByNamePart(String targetname)  {
+        //根据名称找到从根节点到该节点的路径
         Flux<CategoryTreeVo> categoryTreeVoFlux = listAll()
             .collectList()
             .flatMapIterable(categoryVos -> {
@@ -152,6 +154,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
     @Override
     public CategoryTreeVo getTreeByNameChild(String targetname){
+        //找到树的某一个节点，可以获得该节点下所有孩子
         Flux<CategoryTreeVo> categoryTreeVoFlux = listAll()
             .collectList()
             .flatMapIterable(categoryVos -> {
@@ -192,14 +195,6 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
         }
         return null;
     }
-
-    // static boolean findPathToTopParent(Mono<List<CategoryTreeVo>> monoList,String targetName, List<CategoryTreeVo> path) {
-    //     return monoList.flatMapMany(Flux::fromIterable)
-    //         .filter(node -> node.getMetadata().getName().equals(targetName)  || findPathToTopParent(Mono.just(node.getChildren()), targetName, path))
-    //         .doOnNext(node -> path.add(node))
-    //         .hasElements()
-    //         .block();
-    // }
     static Boolean findPathToTopParent(CategoryTreeVo root, String targetName, List<CategoryTreeVo> result) {
         if (root == null) {
             return false;
@@ -219,6 +214,7 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
 
     Flux<CategoryTreeVo> tomyCategoryTreeVoFlux(String name) {
+
         return listAll()
             .collectList()
             .flatMapIterable(myCategoryVos -> {

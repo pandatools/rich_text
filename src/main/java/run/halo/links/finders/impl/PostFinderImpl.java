@@ -122,6 +122,7 @@ public class PostFinderImpl implements MyPostFinder {
     public Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page,
         @Nullable Integer size,
         String categoryName){
+        // 获得该分类下的所有文章，注意，分类包括该分类和名下所有分类
         CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
 
         List<String> result = new ArrayList<>();
