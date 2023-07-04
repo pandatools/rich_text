@@ -138,8 +138,12 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
         List<CategoryTreeVo> path = new ArrayList<>();
 
-        Mono<List<CategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
-        findPathToTopParent(listMono, targetname, path);
+        List<CategoryTreeVo> listMono = categoryTreeVoFlux.collectList().block();
+        for (CategoryTreeVo categoryTree:listMono) {
+            findPathToTopParent(categoryTree, targetname, path);
+            if(!path.isEmpty()) break;
+        }
+
         Collections.reverse(path);
         Mono<List<CategoryTreeVo>> just = Mono.just(path);
         return just;
@@ -174,8 +178,12 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
 
         List<CategoryTreeVo> path = new ArrayList<>();
 
-        Mono<List<CategoryTreeVo>> listMono = categoryTreeVoFlux.collectList();
-        findPathToTopParent(listMono, targetname, path);
+        List<CategoryTreeVo> listMono = categoryTreeVoFlux.collectList().block();
+        for (CategoryTreeVo categoryTree:listMono) {
+            findPathToTopParent(categoryTree, targetname, path);
+            if(!path.isEmpty()) break;
+        }
+
 
         for(CategoryTreeVo p:path){
             if(p.getMetadata().getName().equals(targetname)){
@@ -192,17 +200,23 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
     //         .hasElements()
     //         .block();
     // }
-    static Mono<Boolean> findPathToTopParent(Mono<List<CategoryTreeVo>> monoList, String targetName, List<CategoryTreeVo> path) {
-        return monoList
-            .flatMapMany(Flux::fromIterable)
-            .filter(node -> node.getMetadata().getName().equals(targetName))
-            .flatMap(node -> {
-                path.add(node);
-                return findPathToTopParent(Mono.just(node.getChildren()), targetName, path);
-            })
-            .hasElements()
-            .defaultIfEmpty(false);
+    static Boolean findPathToTopParent(CategoryTreeVo root, String targetName, List<CategoryTreeVo> result) {
+        if (root == null) {
+            return false;
+        }
+        if (StringUtils.equals(root.getMetadata().getName(), targetName)) {
+            result.add(root);
+            return true;
+        }
+        for (CategoryTreeVo child : root.getChildren()) {
+            if (findPathToTopParent(child, targetName, result)) {
+                result.add(root);
+                return true;
+            }
+        }
+        return false;
     }
+
 
     Flux<CategoryTreeVo> tomyCategoryTreeVoFlux(String name) {
         return listAll()
