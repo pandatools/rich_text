@@ -122,6 +122,7 @@ public class PostFinderImpl implements MyPostFinder {
     public Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page,
         @Nullable Integer size,
         String categoryName){
+        System.out.println("yhnnnnnnnnnnnnnnnnnnnnnn");
         // 获得该分类下的所有文章，注意，分类包括该分类和名下所有分类
         CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
 
@@ -151,6 +152,34 @@ public class PostFinderImpl implements MyPostFinder {
                 )
             )
             .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+    }
+
+    @Override
+    public  Mono<ListResult<MyListedPostVo>> searchPostByMixed(@Nullable Integer page,
+        @Nullable Integer size,String data){
+        List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(data);
+        Comparator<Post> comparator =  defaultComparator();
+        Predicate<Post> postPredicate = post -> post.isPublished()
+            && Objects.equals(false, post.getSpec().getDeleted())
+            && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
+            && (post.getSpec().getTitle().toLowerCase().contains(data.toLowerCase())
+            || this.hasCommonElement(post.getSpec().getCategories(), categoryList));
+
+        return client.list(Post.class, postPredicate
+            , comparator,pageNullSafe(page),sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
+                .concatMap(post -> convertToListedPostVo(post)
+                    .flatMap(postVo -> populateStats(postVo)
+                        .doOnNext(postVo::setStats).thenReturn(postVo)
+                    )
+                )
+                .collectList()
+                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                    postVos)
+                )
+            )
+            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+
+
     }
 
 
@@ -251,18 +280,7 @@ public class PostFinderImpl implements MyPostFinder {
         return list;
     }
 
-    @Override
-    public Flux<MyListedPostVo> searchPostByMixed(String data){
-        List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(data);
 
-        var list = client.list(Post.class, post -> post.isPublished()
-                    && Objects.equals(false, post.getSpec().getDeleted())
-                    && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
-                    && (post.getSpec().getTitle().toLowerCase().contains(data.toLowerCase())||this.hasCommonElement(post.getSpec().getCategories(),categoryList))
-                , defaultComparator())
-            .concatMap(this::convertToListedPostVo);
-        return list;
-    }
 
 
     Boolean hasCommonElement(List<String> list1, List<String> list2) {
