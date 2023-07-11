@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -16,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.content.Category;
+import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.ReactiveExtensionClient;
 import run.halo.app.theme.finders.Finder;
@@ -72,7 +74,16 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
         return client.list(Category.class, null, defaultComparator())
             .map(CategoryVo::from);
     }
+    @Override
+    public List<String> getCategoryByNameAmbiguous(String name){
 
+        Predicate<Category> postPredicate = category -> category.getSpec().getDisplayName().toLowerCase().contains(name.toLowerCase());
+        return client.list(Category.class, postPredicate, defaultComparator())
+            .map(CategoryVo::from)
+            .flatMap(categoryVo -> Mono.just(categoryVo.getMetadata().getName())).collectList()
+            .block();
+
+    }
     @Override
     public Flux<CategoryTreeVo> listAsTree() {
         return this.tomyCategoryTreeVoFlux(null);

@@ -31,6 +31,11 @@ public interface MyPostFinder {
 
     Flux<MyListedPostVo> listAll();
 
+    Flux<MyListedPostVo> searchPostByTitle(String title);
+    Flux<MyListedPostVo> searchPostByMixed(String data);
+
+    Flux<MyListedPostVo> searchPostByCategory(String category);
+
 
     Map<String,String> getAnnotationsByArticle(String name, String patternString);
 

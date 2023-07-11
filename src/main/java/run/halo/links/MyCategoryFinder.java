@@ -37,4 +37,6 @@ public interface MyCategoryFinder {
     CategoryTreeVo getTreeByNameChild(String name);
 
     void traverse(CategoryTreeVo node, List<String> result) ;
+
+    List<String> getCategoryByNameAmbiguous(String name);
 }

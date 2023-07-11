@@ -227,8 +227,52 @@ public class PostFinderImpl implements MyPostFinder {
             .concatMap(this::convertToListedPostVo);
         return list;
     }
+    @Override
+    public Flux<MyListedPostVo> searchPostByTitle(String title){
+        var list = client.list(Post.class, post -> post.isPublished()
+                    && Objects.equals(false, post.getSpec().getDeleted())
+                    && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
+                    && post.getSpec().getTitle().toLowerCase().contains(title.toLowerCase())
+                , defaultComparator())
+            .concatMap(this::convertToListedPostVo);
+        return list;
+    }
+
+    @Override
+    public Flux<MyListedPostVo> searchPostByCategory(String category){
+        List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(category);
+        System.out.println("categoryList="+categoryList.toString());
+        var list = client.list(Post.class, post -> post.isPublished()
+                    && Objects.equals(false, post.getSpec().getDeleted())
+                    && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
+                    && this.hasCommonElement(post.getSpec().getCategories(),categoryList)
+                , defaultComparator())
+            .concatMap(this::convertToListedPostVo);
+        return list;
+    }
+
+    @Override
+    public Flux<MyListedPostVo> searchPostByMixed(String data){
+        List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(data);
+
+        var list = client.list(Post.class, post -> post.isPublished()
+                    && Objects.equals(false, post.getSpec().getDeleted())
+                    && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
+                    && (post.getSpec().getTitle().toLowerCase().contains(data.toLowerCase())||this.hasCommonElement(post.getSpec().getCategories(),categoryList))
+                , defaultComparator())
+            .concatMap(this::convertToListedPostVo);
+        return list;
+    }
 
 
+    Boolean hasCommonElement(List<String> list1, List<String> list2) {
+        for (String element : list1) {
+            if (list2.contains(element)) {
+                return true;
+            }
+        }
+        return false;
+    }
     static Comparator<Post> defaultComparator() {
         Function<Post, Boolean> pinned =
             post -> Objects.requireNonNullElse(post.getSpec().getPinned(), false);
