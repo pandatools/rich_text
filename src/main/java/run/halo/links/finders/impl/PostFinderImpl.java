@@ -124,7 +124,7 @@ public class PostFinderImpl implements MyPostFinder {
     public Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page,
         @Nullable Integer size,
         String categoryName){
-        System.out.println("yhnnnnnnnnnnnnnnnnnnnnnn");
+        System.out.println("yhnnnnnnnnnnnnnnnnnnnnn");
         // 获得该分类下的所有文章，注意，分类包括该分类和名下所有分类
         CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
 
