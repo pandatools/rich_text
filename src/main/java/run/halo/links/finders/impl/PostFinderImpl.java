@@ -342,7 +342,7 @@ public class PostFinderImpl implements MyPostFinder {
         Map<String, String> tmp = new HashMap<>();
         tmp.put("label",String.valueOf(page));
         tmp.put("type","button");
-        tmp.put("link","/page="+String.valueOf(page));
+        tmp.put("link","/?page="+String.valueOf(page));
         return tmp;
     }
 
