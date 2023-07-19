@@ -1,5 +1,6 @@
 package run.halo.links;
 
+import net.minidev.json.JSONObject;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,6 +41,6 @@ public interface MyPostFinder {
 
     Map<String,String> getAnnotationsByArticle(String name, String patternString);
 
-    Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page, @Nullable Integer size,
+    Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page, @Nullable Integer size,
         String categoryName);
 }

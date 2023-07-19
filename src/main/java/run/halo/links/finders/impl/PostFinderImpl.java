@@ -13,6 +13,8 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
@@ -119,7 +121,7 @@ public class PostFinderImpl implements MyPostFinder {
         return ObjectUtils.defaultIfNull(size, 10);
     }
     @Override
-    public Mono<ListResult<MyListedPostVo>> listByCategoryAndChildren(@Nullable Integer page,
+    public Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page,
         @Nullable Integer size,
         String categoryName){
         System.out.println("yhnnnnnnnnnnnnnnnnnnnnnn");
@@ -138,7 +140,7 @@ public class PostFinderImpl implements MyPostFinder {
         Predicate<Post> predicate = FIXED_PREDICATE
             .and(postPredicate == null ? post -> true : postPredicate);
 
-        return client.list(Post.class, predicate,
+        Mono<ListResult<MyListedPostVo>> listResultMono = client.list(Post.class, predicate,
                 comparator, pageNullSafe(page), sizeNullSafe(size))
             .flatMap(list -> Flux.fromStream(list.get())
                 .concatMap(post -> convertToListedPostVo(post)
@@ -152,6 +154,54 @@ public class PostFinderImpl implements MyPostFinder {
                 )
             )
             .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+        ListResult<MyListedPostVo> postvo = listResultMono.block();
+        long total = postvo.getTotal();
+        long totalPage = (long) Math.ceil((double)total /  size);
+        JSONObject jsonObject = new JSONObject();
+        System.out.println("total="+String.valueOf(total)+"totalPage="+String.valueOf(totalPage)+"page="+String.valueOf(page));
+        jsonObject.put("items",postvo);
+        List<Map<String, String>> pagelist = new ArrayList<>();
+        if(page<=totalPage) {
+            pagelist.add(this.setMap(1));
+
+            if (totalPage <= 4 && totalPage > 1) {
+                for (int i = 2; i <= totalPage; i++) {
+                    pagelist.add(this.setMap(i));
+                }
+            } else if (totalPage <= 1) {
+
+            } else {
+
+                if (page == 2 || page == 1 || page == 3) {
+                    pagelist.add(this.setMap(2));
+                    pagelist.add(this.setMap(3));
+                } else {
+                    pagelist.add(this.setMap(-1));
+                    pagelist.add(this.setMap(page - 1));
+                    pagelist.add(this.setMap(page));
+                }
+
+                if (page < totalPage && page != 1 && page != 2) {
+                    pagelist.add(this.setMap(page + 1));
+                }
+
+
+                if (page + 2 < totalPage) {
+                    pagelist.add(this.setMap(-1));
+                }
+                pagelist.add(this.setMap((int) totalPage));
+
+
+            }
+        }
+        JSONArray jsonArray = new JSONArray();
+        for (Map<String, String> map : pagelist) {
+            JSONObject tmp3= new JSONObject(map);
+            jsonArray.add(tmp3);
+        }
+        jsonObject.put("page",jsonArray);
+
+        return  Mono.just(jsonObject);
     }
 
     @Override
@@ -281,7 +331,20 @@ public class PostFinderImpl implements MyPostFinder {
     }
 
 
+    public Map<String, String>  setMap(int page){
+        if(page<0){
+            Map<String, String> tmp = new HashMap<>();
+            tmp.put("label","...");
+            tmp.put("type","text");
+            return tmp;
+        }
 
+        Map<String, String> tmp = new HashMap<>();
+        tmp.put("label",String.valueOf(page));
+        tmp.put("type","button");
+        tmp.put("link","/page="+String.valueOf(page));
+        return tmp;
+    }
 
     Boolean hasCommonElement(List<String> list1, List<String> list2) {
         for (String element : list1) {
