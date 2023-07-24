@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,8 +76,12 @@ public class PostFinderImpl implements MyPostFinder {
 
     @Override
     public Map<String,String> getAnnotationsByArticle(String name, String patternString) {
+        System.out.println("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
         MyPostVo obj = this.getByName(name).block();
-        Map<String, String> result = new HashMap<>();
+
+        assert obj != null;
+        System.out.println(obj.toString());
+        Map<String, String> result = new LinkedHashMap<>();
         Map<String, String> annotations = obj.getMetadata().getAnnotations();
         for (String key : annotations.keySet()) {
             Pattern pattern = Pattern.compile(patternString);
