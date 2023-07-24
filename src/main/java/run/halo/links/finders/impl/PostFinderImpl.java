@@ -78,9 +78,6 @@ public class PostFinderImpl implements MyPostFinder {
     public Map<String,String> getAnnotationsByArticle(String name, String patternString) {
         System.out.println("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
         MyPostVo obj = this.getByName(name).block();
-
-        assert obj != null;
-        System.out.println(obj.toString());
         Map<String, String> result = new LinkedHashMap<>();
         Map<String, String> annotations = obj.getMetadata().getAnnotations();
         for (String key : annotations.keySet()) {
