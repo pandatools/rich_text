@@ -191,7 +191,9 @@ public class PostFinderImpl implements MyPostFinder {
                 if (page + 2 < totalPage) {
                     pagelist.add(this.setMap(-1));
                 }
-                pagelist.add(this.setMap((int) totalPage));
+                if(page+1<totalPage){
+                    pagelist.add(setMap((int) totalPage));
+                }
 
 
             }
