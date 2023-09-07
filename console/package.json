@@ -13,6 +13,7 @@
   "dependencies": {
     "@halo-dev/components": "^1.5.0",
     "@halo-dev/console-shared": "^2.6.0",
+    "@mayasabha/ckeditor4-vue3": "^1.0.5",
     "canvas-confetti": "^1.6.0",
     "vue": "^3.3.4"
   },
