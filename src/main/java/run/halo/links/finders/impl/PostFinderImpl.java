@@ -208,8 +208,11 @@ public class PostFinderImpl implements MyPostFinder {
         return  Mono.just(jsonObject);
     }
 
+
+
+
     @Override
-    public  Mono<ListResult<MyListedPostVo>> searchPostByMixed(@Nullable Integer page,
+    public  Mono<JSONObject> searchPostByMixed(@Nullable Integer page,
         @Nullable Integer size,String data){
         List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(data);
         Comparator<Post> comparator =  defaultComparator();
@@ -219,7 +222,9 @@ public class PostFinderImpl implements MyPostFinder {
             && (post.getSpec().getTitle().toLowerCase().contains(data.toLowerCase())
             || this.hasCommonElement(post.getSpec().getCategories(), categoryList));
 
-        return client.list(Post.class, postPredicate
+
+
+        Mono<ListResult<MyListedPostVo>> listResultMono =  client.list(Post.class, postPredicate
             , comparator,pageNullSafe(page),sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
                 .concatMap(post -> convertToListedPostVo(post)
                     .flatMap(postVo -> populateStats(postVo)
@@ -233,6 +238,54 @@ public class PostFinderImpl implements MyPostFinder {
             )
             .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
 
+        ListResult<MyListedPostVo> postvo = listResultMono.block();
+        long total = postvo.getTotal();
+        long totalPage = (long) Math.ceil((double)total /  size);
+        List<Map<String, String>> pagelist = new ArrayList<>();
+        JSONObject jsonObject = new JSONObject();
+        if(page<=totalPage) {
+            pagelist.add(this.setMap(1));
+
+            if (totalPage <= 4 && totalPage > 1) {
+                for (int i = 2; i <= totalPage; i++) {
+                    pagelist.add(this.setMap(i));
+                }
+            } else if (totalPage <= 1) {
+
+            } else {
+
+                if (page == 2 || page == 1 || page == 3) {
+                    pagelist.add(this.setMap(2));
+                    pagelist.add(this.setMap(3));
+                } else {
+                    pagelist.add(this.setMap(-1));
+                    pagelist.add(this.setMap(page - 1));
+                    pagelist.add(this.setMap(page));
+                }
+
+                if (page < totalPage && page != 1 && page != 2) {
+                    pagelist.add(this.setMap(page + 1));
+                }
+
+
+                if (page + 2 < totalPage) {
+                    pagelist.add(this.setMap(-1));
+                }
+                if(page+1<totalPage){
+                    pagelist.add(setMap((int) totalPage));
+                }
+
+
+            }
+        }
+        JSONArray jsonArray = new JSONArray();
+        for (Map<String, String> map : pagelist) {
+            JSONObject tmp3= new JSONObject(map);
+            jsonArray.add(tmp3);
+        }
+        jsonObject.put("page",jsonArray);
+        jsonObject.put("infos",postvo);
+        return  Mono.just(jsonObject);
 
     }
 

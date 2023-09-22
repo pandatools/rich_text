@@ -33,7 +33,7 @@ public interface MyPostFinder {
     Flux<MyListedPostVo> listAll();
 
     Flux<MyListedPostVo> searchPostByTitle(String title);
-    Mono<ListResult<MyListedPostVo>>  searchPostByMixed(@Nullable Integer page,
+    Mono<JSONObject>  searchPostByMixed(@Nullable Integer page,
         @Nullable Integer size,String data);
 
     Flux<MyListedPostVo> searchPostByCategory(String category);
