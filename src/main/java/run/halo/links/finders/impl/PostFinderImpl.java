@@ -209,7 +209,15 @@ public class PostFinderImpl implements MyPostFinder {
     }
 
 
-
+    Boolean hasAllData(String title, String data) {
+        String[] patternArray = data.split("\\s+");
+        for (String element : patternArray) {
+            if (!title.contains(element)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Override
     public  Mono<JSONObject> searchPostByMixed(@Nullable Integer page,
@@ -219,7 +227,7 @@ public class PostFinderImpl implements MyPostFinder {
         Predicate<Post> postPredicate = post -> post.isPublished()
             && Objects.equals(false, post.getSpec().getDeleted())
             && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
-            && (post.getSpec().getTitle().toLowerCase().contains(data.toLowerCase())
+            && (this.hasAllData(post.getSpec().getTitle().toLowerCase(),data.toLowerCase())
             || this.hasCommonElement(post.getSpec().getCategories(), categoryList));
 
 
