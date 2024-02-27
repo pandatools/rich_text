@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -17,7 +19,6 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.content.Category;
-import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.ReactiveExtensionClient;
 import run.halo.app.theme.finders.Finder;
@@ -118,6 +119,56 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                     }
                 });
                 return listToMyTree(nameIdentityMap.values(), name);
+            });
+    }
+
+    @Override
+    public Flux<CategoryTreeVo> getCompatriot(String name) {
+
+        System.out.println("use_getCompatriot111");
+        return listAll()
+            .collectList()
+            .flatMapIterable(categoryVos -> {
+                Map<String, CategoryTreeVo> nameIdentityMap = categoryVos.stream()
+                    .map(CategoryTreeVo::from)
+                    .collect(Collectors.toMap(categoryVo -> categoryVo.getMetadata().getName(),
+                        Function.identity()));
+
+                Collection<CategoryTreeVo> result = new ArrayList<>();
+                List<String> aims = new ArrayList<>();
+                List<String> all_childrens = new ArrayList<>();
+                Set<String> all_nodes = new HashSet<>(nameIdentityMap.keySet());
+                for (String key : nameIdentityMap.keySet()) {
+                    CategoryTreeVo value = nameIdentityMap.get(key);
+                    List<String> children = value.getSpec().getChildren();
+                    for (String child : children) {
+                        if (child.equals(name)) {
+                            aims = children;
+                            break;
+                        }
+                    }
+
+                    all_childrens.addAll(children);
+
+                }
+
+                Set<String> set_all_childrens = new HashSet<>(all_childrens);
+                all_nodes.removeAll(all_childrens); //只剩下top
+
+
+                if(aims.isEmpty()&&all_nodes.contains(name)){ //aim 为top
+                    aims = new ArrayList<>(all_nodes);
+                }
+
+
+                for (String aim : aims) {
+                    CategoryTreeVo categoryTreeVo = nameIdentityMap.get(aim);
+                    if (categoryTreeVo != null) {
+                        result.add(categoryTreeVo);
+                    }
+                }
+
+                return result;
             });
     }
 

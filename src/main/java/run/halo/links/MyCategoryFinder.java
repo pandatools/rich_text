@@ -39,4 +39,6 @@ public interface MyCategoryFinder {
     void traverse(CategoryTreeVo node, List<String> result) ;
 
     List<String> getCategoryByNameAmbiguous(String name);
+
+    Flux<CategoryTreeVo> getCompatriot(String name);
 }
