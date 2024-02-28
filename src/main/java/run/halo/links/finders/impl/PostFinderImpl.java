@@ -2,6 +2,8 @@ package run.halo.links.finders.impl;
 
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -122,10 +124,21 @@ public class PostFinderImpl implements MyPostFinder {
     int sizeNullSafe(Integer size) {
         return ObjectUtils.defaultIfNull(size, 10);
     }
+
+
+    Boolean InstantIsTrueYear(Instant posttime,Integer time){
+
+        ZonedDateTime zonedDateTime = posttime.atZone(ZoneId.systemDefault());
+
+        // 获取年份
+        int year = zonedDateTime.getYear();
+        return year == time ;
+    }
     @Override
-    public Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page,
+    public Mono<JSONObject> listByCategoryAndChildrenV2(@Nullable Integer page,
         @Nullable Integer size,
-        String categoryName){
+        String categoryName,
+        Integer customer_year){
         System.out.println("yhnnnnnnnnnnnnnnnnnnnnn");
         // 获得该分类下的所有文章，注意，分类包括该分类和名下所有分类
         CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
@@ -134,7 +147,9 @@ public class PostFinderImpl implements MyPostFinder {
         categoryFinder.traverse(categoryTreeVo,result);
         System.out.println("yslhhhresult = " + result);
         Comparator<Post> comparator =  defaultComparator();
-        Predicate<Post> postPredicate = post -> contains(post.getSpec().getCategories(), result);
+        Predicate<Post>  postPredicate = post -> contains(post.getSpec().getCategories(), result) && InstantIsTrueYear(post.getSpec().getPublishTime(),customer_year);
+
+
         Predicate<Post> FIXED_PREDICATE = post -> post.isPublished()
             && Objects.equals(false, post.getSpec().getDeleted())
             && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible());
@@ -207,6 +222,95 @@ public class PostFinderImpl implements MyPostFinder {
 
         return  Mono.just(jsonObject);
     }
+
+
+    @Override
+    public Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page,
+        @Nullable Integer size,
+        String categoryName){
+        System.out.println("yhnnnnnnnnnnnnnnnnnnnnn");
+        // 获得该分类下的所有文章，注意，分类包括该分类和名下所有分类
+        CategoryTreeVo categoryTreeVo = categoryFinder.getTreeByNameChild(categoryName);
+
+        List<String> result = new ArrayList<>();
+        categoryFinder.traverse(categoryTreeVo,result);
+        System.out.println("yslhhhresult = " + result);
+        Comparator<Post> comparator =  defaultComparator();
+        Predicate<Post> postPredicate =  post -> contains(post.getSpec().getCategories(), result);
+        Predicate<Post> FIXED_PREDICATE = post -> post.isPublished()
+            && Objects.equals(false, post.getSpec().getDeleted())
+            && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible());
+
+        Predicate<Post> predicate = FIXED_PREDICATE
+            .and(postPredicate == null ? post -> true : postPredicate);
+
+        Mono<ListResult<MyListedPostVo>> listResultMono = client.list(Post.class, predicate,
+                comparator, pageNullSafe(page), sizeNullSafe(size))
+            .flatMap(list -> Flux.fromStream(list.get())
+                .concatMap(post -> convertToListedPostVo(post)
+                    .flatMap(postVo -> populateStats(postVo)
+                        .doOnNext(postVo::setStats).thenReturn(postVo)
+                    )
+                )
+                .collectList()
+                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                    postVos)
+                )
+            )
+            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+        ListResult<MyListedPostVo> postvo = listResultMono.block();
+        long total = postvo.getTotal();
+        long totalPage = (long) Math.ceil((double)total /  size);
+        JSONObject jsonObject = new JSONObject();
+        System.out.println("total="+String.valueOf(total)+"totalPage="+String.valueOf(totalPage)+"page="+String.valueOf(page));
+        jsonObject.put("items",postvo);
+        List<Map<String, String>> pagelist = new ArrayList<>();
+        if(page<=totalPage) {
+            pagelist.add(this.setMap(1));
+
+            if (totalPage <= 4 && totalPage > 1) {
+                for (int i = 2; i <= totalPage; i++) {
+                    pagelist.add(this.setMap(i));
+                }
+            } else if (totalPage <= 1) {
+
+            } else {
+
+                if (page == 2 || page == 1 || page == 3) {
+                    pagelist.add(this.setMap(2));
+                    pagelist.add(this.setMap(3));
+                } else {
+                    pagelist.add(this.setMap(-1));
+                    pagelist.add(this.setMap(page - 1));
+                    pagelist.add(this.setMap(page));
+                }
+
+                if (page < totalPage && page != 1 && page != 2) {
+                    pagelist.add(this.setMap(page + 1));
+                }
+
+
+                if (page + 2 < totalPage) {
+                    pagelist.add(this.setMap(-1));
+                }
+                if(page+1<totalPage){
+                    pagelist.add(setMap((int) totalPage));
+                }
+
+
+            }
+        }
+        JSONArray jsonArray = new JSONArray();
+        for (Map<String, String> map : pagelist) {
+            JSONObject tmp3= new JSONObject(map);
+            jsonArray.add(tmp3);
+        }
+        jsonObject.put("page",jsonArray);
+
+        return  Mono.just(jsonObject);
+    }
+
+
 
 
     Boolean hasAllData(String title, String data) {

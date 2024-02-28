@@ -43,4 +43,6 @@ public interface MyPostFinder {
 
     Mono<JSONObject> listByCategoryAndChildren(@Nullable Integer page, @Nullable Integer size,
         String categoryName);
+    Mono<JSONObject> listByCategoryAndChildrenV2(@Nullable Integer page, @Nullable Integer size,
+        String categoryName,Integer customer_year);
 }
