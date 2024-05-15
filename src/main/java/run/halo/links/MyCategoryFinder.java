@@ -1,6 +1,7 @@
 package run.halo.links;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,4 +42,6 @@ public interface MyCategoryFinder {
     List<String> getCategoryByNameAmbiguous(String name);
 
     Flux<CategoryTreeVo> getCompatriot(String name);
+
+    Map<String,String> getAnnotationsByCategory(String name, String patternString);
 }

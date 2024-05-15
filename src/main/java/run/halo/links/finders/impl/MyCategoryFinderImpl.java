@@ -6,12 +6,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -25,6 +28,7 @@ import run.halo.app.theme.finders.Finder;
 import run.halo.links.MyCategoryFinder;
 import run.halo.links.vo.CategoryTreeVo;
 import run.halo.links.vo.CategoryVo;
+import run.halo.links.vo.MySinglePageVo;
 
 /**
  * A default implementation of {@link MyCategoryFinder}.
@@ -359,6 +363,21 @@ public class MyCategoryFinderImpl implements MyCategoryFinder {
                 traverse(child, result);
             }
         }
+    }
+    @Override
+    public Map<String,String> getAnnotationsByCategory(String name, String patternString){
+
+        CategoryVo obj = this.getByName(name).block();
+        Map<String, String> result = new LinkedHashMap<>();
+        Map<String, String> annotations = obj.getMetadata().getAnnotations();
+        for (String key : annotations.keySet()) {
+            Pattern pattern = Pattern.compile(patternString);
+            Matcher matcher = pattern.matcher(key);
+            if (matcher.find()) {
+                result.put(key, annotations.get(key));
+            }
+        }
+        return result;
     }
     static List<CategoryTreeVo> listToTree(Collection<CategoryTreeVo> list, String name) {
         Map<String, List<CategoryTreeVo>> parentNameIdentityMap = list.stream()
