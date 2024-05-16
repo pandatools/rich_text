@@ -36,6 +36,9 @@ public interface MyPostFinder {
     Mono<JSONObject>  searchPostByMixed(@Nullable Integer page,
         @Nullable Integer size,String data);
 
+    Mono<JSONObject> searchPostByMixedAndSearchFalse(@Nullable Integer page,
+        @Nullable Integer size,String data);
+
     Flux<MyListedPostVo> searchPostByCategory(String category);
 
 

@@ -402,6 +402,99 @@ public class PostFinderImpl implements MyPostFinder {
     }
 
 
+    Boolean check_isFalse(Map<String, String> annotations){
+        for (String key : annotations.keySet()) {
+                if (key == "search"){
+                    System.out.println("aaaaaaaaaaaaaaaa");
+
+                    if (annotations.get(key).equals("false")){
+                        return false;
+                    }
+                    return true;
+                }
+
+        }
+        return true;
+    }
+    @Override
+    public Mono<JSONObject> searchPostByMixedAndSearchFalse(@Nullable Integer page,
+        @Nullable Integer size,String data){
+        //
+        List<String> categoryList = categoryFinder.getCategoryByNameAmbiguous(data);
+        Comparator<Post> comparator =  defaultComparator();
+        Predicate<Post> postPredicate = post -> post.isPublished()
+            && Objects.equals(false, post.getSpec().getDeleted())
+            && Post.VisibleEnum.PUBLIC.equals(post.getSpec().getVisible())
+            && this.check_isFalse(post.getMetadata().getAnnotations())
+            && (this.hasAllData(post.getSpec().getTitle().toLowerCase(),data.toLowerCase())
+            || this.hasCommonElement(post.getSpec().getCategories(), categoryList)) ;
+
+
+
+        Mono<ListResult<MyListedPostVo>> listResultMono =  client.list(Post.class, postPredicate
+                , comparator,pageNullSafe(page),sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
+                .concatMap(post -> convertToListedPostVo(post)
+                    .flatMap(postVo -> populateStats(postVo)
+                        .doOnNext(postVo::setStats).thenReturn(postVo)
+                    )
+                )
+                .collectList()
+                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                    postVos)
+                )
+            )
+            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+
+        ListResult<MyListedPostVo> postvo = listResultMono.block();
+        long total = postvo.getTotal();
+        long totalPage = (long) Math.ceil((double)total /  size);
+        List<Map<String, String>> pagelist = new ArrayList<>();
+        JSONObject jsonObject = new JSONObject();
+        if(page<=totalPage) {
+            pagelist.add(this.setMap(1));
+
+            if (totalPage <= 4 && totalPage > 1) {
+                for (int i = 2; i <= totalPage; i++) {
+                    pagelist.add(this.setMap(i));
+                }
+            } else if (totalPage <= 1) {
+
+            } else {
+
+                if (page == 2 || page == 1 || page == 3) {
+                    pagelist.add(this.setMap(2));
+                    pagelist.add(this.setMap(3));
+                } else {
+                    pagelist.add(this.setMap(-1));
+                    pagelist.add(this.setMap(page - 1));
+                    pagelist.add(this.setMap(page));
+                }
+
+                if (page < totalPage && page != 1 && page != 2) {
+                    pagelist.add(this.setMap(page + 1));
+                }
+
+
+                if (page + 2 < totalPage) {
+                    pagelist.add(this.setMap(-1));
+                }
+                if(page+1<totalPage){
+                    pagelist.add(setMap((int) totalPage));
+                }
+
+
+            }
+        }
+        JSONArray jsonArray = new JSONArray();
+        for (Map<String, String> map : pagelist) {
+            JSONObject tmp3= new JSONObject(map);
+            jsonArray.add(tmp3);
+        }
+        jsonObject.put("page",jsonArray);
+        jsonObject.put("infos",postvo);
+        return  Mono.just(jsonObject);
+    }
+
     protected void checkBaseSnapshot(Snapshot snapshot) {
         Assert.notNull(snapshot, "The snapshot must not be null.");
         String keepRawAnno =
