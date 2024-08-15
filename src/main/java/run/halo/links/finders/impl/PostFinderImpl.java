@@ -227,17 +227,23 @@ public class PostFinderImpl implements MyPostFinder {
     @Override
     public Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
         String categoryName) {
-
+        Predicate<Post> postPredicate;
         // page<0 过滤 没有rank的数据
-
+        if (categoryName.isEmpty()) {
+            postPredicate = post -> true;
+        } else {
+            postPredicate = post -> contains(post.getSpec().getCategories(),
+                Collections.singletonList(categoryName));
+        }
         System.out.println("my listByCategoryRanked");
-        Predicate<Post> postPredicate = post -> contains(post.getSpec().getCategories(),
-            Collections.singletonList(categoryName));
+
         Predicate<Post> FIXED_PREDICATE = post -> post.isPublished();
         Comparator<Post> comparator = RankComparator();
+
         Predicate<Post> predicate = FIXED_PREDICATE
             .and(postPredicate == null ? post -> true : postPredicate);
-        if(page>=0) {
+        if(!categoryName.isEmpty()) {
+            System.out.println("category is not null");
             return client.list(Post.class, predicate,
                     comparator, pageNullSafe(page), sizeNullSafe(size))
                 .flatMap(list -> Flux.fromStream(list.get())
@@ -254,8 +260,9 @@ public class PostFinderImpl implements MyPostFinder {
                 )
                 .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
         }else{
+            System.out.println("category  is null");
             return client.list(Post.class, predicate,
-                    comparator, pageNullSafe(page), 10000)
+                    comparator, pageNullSafe(page), size)
                 .flatMap(list -> Flux.fromStream(list.get())
                     .filter(post -> post.getMetadata().getAnnotations().containsKey("rank")) // 过滤掉没有rank的Post
                     .collectList() // 收集过滤后的Post列表
