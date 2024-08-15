@@ -227,6 +227,9 @@ public class PostFinderImpl implements MyPostFinder {
     @Override
     public Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
         String categoryName) {
+
+        // page<0 过滤 没有rank的数据
+
         System.out.println("my listByCategoryRanked");
         Predicate<Post> postPredicate = post -> contains(post.getSpec().getCategories(),
             Collections.singletonList(categoryName));
@@ -234,19 +237,43 @@ public class PostFinderImpl implements MyPostFinder {
         Comparator<Post> comparator = RankComparator();
         Predicate<Post> predicate = FIXED_PREDICATE
             .and(postPredicate == null ? post -> true : postPredicate);
-        return client.list(Post.class, predicate,
-            comparator, pageNullSafe(page), sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
-                .concatMap(post -> convertToListedPostVo_RanK(post)
-                    .flatMap(postVo -> populateStats(postVo)
-                        .doOnNext(postVo::setStats).thenReturn(postVo)
+        if(page>=0) {
+            return client.list(Post.class, predicate,
+                    comparator, pageNullSafe(page), sizeNullSafe(size))
+                .flatMap(list -> Flux.fromStream(list.get())
+                    .concatMap(post -> convertToListedPostVo_RanK(post)
+                        .flatMap(postVo -> populateStats(postVo)
+                            .doOnNext(postVo::setStats).thenReturn(postVo)
+                        )
+                    )
+                    .collectList()
+                    .map(
+                        postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                            postVos)
                     )
                 )
-                .collectList()
-                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
-                    postVos)
+                .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+        }else{
+            return client.list(Post.class, predicate,
+                    comparator, pageNullSafe(page), 10000)
+                .flatMap(list -> Flux.fromStream(list.get())
+                    .filter(post -> post.getMetadata().getAnnotations().containsKey("rank")) // 过滤掉没有rank的Post
+                    .collectList() // 收集过滤后的Post列表
+                    .flatMap(filteredPosts -> {
+                        // 使用过滤后的列表
+                        return Flux.fromIterable(filteredPosts)
+                            .concatMap(post -> convertToListedPostVo_RanK(post)
+                                .flatMap(postVo -> populateStats(postVo)
+                                    .doOnNext(postVo::setStats).thenReturn(postVo)
+                                )
+                            )
+                            .collectList()
+                            .map(postVos -> new ListResult<>(1, filteredPosts.size(), (long) filteredPosts.size(), postVos));
+                    })
                 )
-            )
-            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+                .defaultIfEmpty(new ListResult<>(1, 1, 0L, List.of()));
+
+        }
     }
 
 
