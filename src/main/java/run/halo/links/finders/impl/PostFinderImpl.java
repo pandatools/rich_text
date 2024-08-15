@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.comparator.Comparators;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -235,7 +236,7 @@ public class PostFinderImpl implements MyPostFinder {
             .and(postPredicate == null ? post -> true : postPredicate);
         return client.list(Post.class, predicate,
             comparator, pageNullSafe(page), sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
-                .concatMap(post -> convertToListedPostVo(post)
+                .concatMap(post -> convertToListedPostVo_RanK(post)
                     .flatMap(postVo -> populateStats(postVo)
                         .doOnNext(postVo::setStats).thenReturn(postVo)
                     )
@@ -579,6 +580,26 @@ public class PostFinderImpl implements MyPostFinder {
         postVo.setContributors(List.of());
 
         return Mono.just(postVo)
+            .defaultIfEmpty(postVo);
+    }
+
+    public Mono<MyListedPostVo> convertToListedPostVo_RanK(@NonNull Post post) {
+        Assert.notNull(post, "Post must not be null");
+        MyListedPostVo postVo = MyListedPostVo.from(post);
+        postVo.setCategories(List.of());
+        postVo.setTags(List.of());
+        postVo.setContributors(List.of());
+
+        return Mono.just(postVo).flatMap(p -> {
+                List<String> categoryNames = p.getSpec().getCategories();
+                if (CollectionUtils.isEmpty(categoryNames)) {
+                    return Mono.just(p);
+                }
+                return categoryFinder.getByNames(categoryNames)
+                    .collectList()
+                    .doOnNext(p::setCategories)
+                    .thenReturn(p);
+            })
             .defaultIfEmpty(postVo);
     }
 
