@@ -8,7 +8,6 @@ import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.links.vo.MyListedPostVo;
 import run.halo.links.vo.MyPostVo;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,4 +47,7 @@ public interface MyPostFinder {
         String categoryName);
     Mono<JSONObject> listByCategoryAndChildrenV2(@Nullable Integer page, @Nullable Integer size,
         String categoryName,Integer customer_year);
+
+    Mono<ListResult<MyListedPostVo>> listByCategoryRanked(@Nullable Integer page, @Nullable Integer size,
+        String categoryName);
 }

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -32,13 +33,11 @@ import run.halo.app.core.extension.content.Snapshot;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.MetadataUtil;
 import run.halo.app.extension.ReactiveExtensionClient;
-
 import run.halo.app.theme.finders.Finder;
 import run.halo.app.metrics.MeterUtils;
 import run.halo.links.ContentWrapper;
 import run.halo.links.MyCategoryFinder;
 import run.halo.links.MyPostFinder;
-// import run.halo.links.MyPostPublicQueryService;
 import run.halo.links.vo.CategoryTreeVo;
 import run.halo.links.vo.ContentVo;
 import run.halo.links.vo.MyListedPostVo;
@@ -222,6 +221,33 @@ public class PostFinderImpl implements MyPostFinder {
 
         return  Mono.just(jsonObject);
     }
+
+
+    @Override
+    public Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
+        String categoryName) {
+        System.out.println("my listByCategoryRanked");
+        Predicate<Post> postPredicate = post -> contains(post.getSpec().getCategories(),
+            Collections.singletonList(categoryName));
+        Predicate<Post> FIXED_PREDICATE = post -> post.isPublished();
+        Comparator<Post> comparator = RankComparator();
+        Predicate<Post> predicate = FIXED_PREDICATE
+            .and(postPredicate == null ? post -> true : postPredicate);
+        return client.list(Post.class, predicate,
+            comparator, pageNullSafe(page), sizeNullSafe(size)).flatMap(list -> Flux.fromStream(list.get())
+                .concatMap(post -> convertToListedPostVo(post)
+                    .flatMap(postVo -> populateStats(postVo)
+                        .doOnNext(postVo::setStats).thenReturn(postVo)
+                    )
+                )
+                .collectList()
+                .map(postVos -> new ListResult<>(list.getPage(), list.getSize(), list.getTotal(),
+                    postVos)
+                )
+            )
+            .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
+    }
+
 
 
     @Override
@@ -629,5 +655,16 @@ public class PostFinderImpl implements MyPostFinder {
             .thenComparing(publishTime, Comparators.nullsLow())
             .thenComparing(name)
             .reversed();
+    }
+    public static int parseIntOrDefault(String str, int defaultValue) {
+        try {
+            return Integer.parseInt(str); // 尝试转换为整数
+        } catch (NumberFormatException e) {
+            return defaultValue; // 如果转换失败，返回默认值
+        }
+    }
+    static Comparator<Post> RankComparator() {
+        Function<Post,Integer> ranked = post -> Objects.requireNonNullElse(parseIntOrDefault(post.getMetadata().getAnnotations().getOrDefault("rank","-9999"),-9999), -9999);
+        return Comparator.comparing(ranked).reversed();
     }
 }
