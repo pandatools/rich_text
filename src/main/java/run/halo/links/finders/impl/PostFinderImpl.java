@@ -226,10 +226,11 @@ public class PostFinderImpl implements MyPostFinder {
 
     @Override
     public Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
-        String categoryName) {
+        String categoryName,String type) {
         Predicate<Post> postPredicate;
-        // page<0 过滤 没有rank的数据
-        if (categoryName.isEmpty()) {
+        //  hot 有权重配置，否则没有
+        if (type.equals("hot")) {
+
             postPredicate = post -> true;
         } else {
             postPredicate = post -> contains(post.getSpec().getCategories(),
@@ -242,7 +243,7 @@ public class PostFinderImpl implements MyPostFinder {
 
         Predicate<Post> predicate = FIXED_PREDICATE
             .and(postPredicate == null ? post -> true : postPredicate);
-        if(!categoryName.isEmpty()) {
+        if(!type.equals("hot")) {
             System.out.println("category is not null");
             return client.list(Post.class, predicate,
                     comparator, pageNullSafe(page), sizeNullSafe(size))

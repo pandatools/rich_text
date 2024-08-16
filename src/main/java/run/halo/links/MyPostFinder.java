@@ -48,6 +48,6 @@ public interface MyPostFinder {
     Mono<JSONObject> listByCategoryAndChildrenV2(@Nullable Integer page, @Nullable Integer size,
         String categoryName,Integer customer_year);
 
-    Mono<ListResult<MyListedPostVo>> listByCategoryRanked(@Nullable Integer page, @Nullable Integer size,
-        String categoryName);
+    Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
+        String categoryName,String type);
 }
