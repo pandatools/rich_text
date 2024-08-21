@@ -222,20 +222,21 @@ public class PostFinderImpl implements MyPostFinder {
 
         return  Mono.just(jsonObject);
     }
-
+    private boolean isValidRankValue(Post post) {
+        Map<String, String> annotations = post.getMetadata().getAnnotations();
+        if (annotations != null && annotations.containsKey("rank")) {
+            String rankValue = annotations.get("rank");
+            return rankValue != null && rankValue.length() > 0;
+        }
+        return false;
+    }
 
     @Override
     public Mono<ListResult<MyListedPostVo>> listByCategoryRanked(Integer page, Integer size,
         String categoryName,String type) {
-        Predicate<Post> postPredicate;
-        //  hot 有权重配置，否则没有
-        if (type.equals("hot")) {
-
-            postPredicate = post -> true;
-        } else {
-            postPredicate = post -> contains(post.getSpec().getCategories(),
-                Collections.singletonList(categoryName));
-        }
+        // 修改，空字符串不参加排名，2，不是产品中心的为什么在里面
+        Predicate<Post> postPredicate =post -> contains(post.getSpec().getCategories(),
+            Collections.singletonList(categoryName));
         System.out.println("my listByCategoryRanked");
 
         Predicate<Post> FIXED_PREDICATE = post -> post.isPublished();
@@ -261,11 +262,11 @@ public class PostFinderImpl implements MyPostFinder {
                 )
                 .defaultIfEmpty(new ListResult<>(page, size, 0L, List.of()));
         }else{
-            System.out.println("category  is null");
+            System.out.println("this is hot category");
             return client.list(Post.class, predicate,
                     comparator, pageNullSafe(page), size)
                 .flatMap(list -> Flux.fromStream(list.get())
-                    .filter(post -> post.getMetadata().getAnnotations().containsKey("rank")) // 过滤掉没有rank的Post
+                    .filter(post -> this.isValidRankValue(post)) // 过滤掉没有rank的Post
                     .collectList() // 收集过滤后的Post列表
                     .flatMap(filteredPosts -> {
                         // 使用过滤后的列表
