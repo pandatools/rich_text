@@ -11,10 +11,14 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@alicloud/dcdn20180115": "2.4.2",
+    "@alicloud/openapi-client": "^0.4.12",
+    "@alicloud/tea-util": "^1.4.9",
     "@halo-dev/components": "^1.5.0",
     "@halo-dev/console-shared": "^2.6.0",
     "@mayasabha/ckeditor4-vue3": "^1.0.5",
     "canvas-confetti": "^1.6.0",
+    "todomvc-app-css": "^2.4.3",
     "vue": "^3.3.4"
   },
   "devDependencies": {

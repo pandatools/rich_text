@@ -13,6 +13,7 @@ import run.halo.links.vo.MyNavigationPostVo;
 import run.halo.links.vo.MyPostVo;
 import run.halo.links.vo.MyStatsVo;
 import run.halo.links.vo.MyTagVo;
+import run.halo.links.vo.Pcdn;
 
 /**
  * <p>Plugin main class to manage the lifecycle of the plugin.</p>
@@ -41,6 +42,7 @@ public class StarterPlugins extends BasePlugin {
         schemeManager.register(MyPostVo.class);
         schemeManager.register(MyStatsVo.class);
         schemeManager.register(MyTagVo.class);
+        schemeManager.register(Pcdn.class);
         System.out.println("1111ok");
     }
 
@@ -55,6 +57,7 @@ public class StarterPlugins extends BasePlugin {
         schemeManager.unregister(schemeManager.get(MyPostVo.class));
         schemeManager.unregister(schemeManager.get(MyStatsVo.class));
         schemeManager.unregister(schemeManager.get(MyTagVo.class));
+        schemeManager.unregister(schemeManager.get(Pcdn.class));
         System.out.println("222stop");
     }
 }
