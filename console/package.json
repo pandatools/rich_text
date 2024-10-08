@@ -17,6 +17,7 @@
     "@halo-dev/components": "^1.5.0",
     "@halo-dev/console-shared": "^2.6.0",
     "@mayasabha/ckeditor4-vue3": "^1.0.5",
+    "axios": "^1.7.7",
     "canvas-confetti": "^1.6.0",
     "todomvc-app-css": "^2.4.3",
     "vue": "^3.3.4"
